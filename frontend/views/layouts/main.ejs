@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %> | BlogSpace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <%- include('../partials/header') %>
+
+  <% if (locals.success && success.length > 0) { %>
+    <div class="flash flash-success"><%= success[0] %></div>
+  <% } %>
+  <% if (locals.error && error.length > 0) { %>
+    <div class="flash flash-error"><%= error[0] %></div>
+  <% } %>
+
+  <main class="main-content">
+    <div class="container">
+      <%- body %>
+    </div>
+  </main>
+
+  <%- include('../partials/footer') %>
+  <script src="/js/main.js"></script>
+</body>
+</html>

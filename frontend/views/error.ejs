@@ -1,0 +1,16 @@
+<%
+const bodyHtml = `
+<div class="error-page">
+  <div class="error-visual">
+    <div class="error-emoji">😕</div>
+  </div>
+  <h1>${title || 'Something went wrong'}</h1>
+  <p>${message || 'An unexpected error occurred. Please try again.'}</p>
+  <div class="error-actions">
+    <a href="/" class="btn btn-primary">Go to Homepage</a>
+    <a href="javascript:history.back()" class="btn btn-ghost">Go Back</a>
+  </div>
+</div>
+`;
+%>
+<%- include('layouts/main', { title: title || 'Error', body: bodyHtml }) %>

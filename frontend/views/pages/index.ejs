@@ -1,0 +1,86 @@
+<%
+const bodyHtml = `
+<section class="hero">
+  <div class="hero-content">
+    <h1>Stories worth reading.</h1>
+    <p>Discover insights on technology, lifestyle, travel, and more — written by real people.</p>
+    ${locals.currentUser ? '<a href="/posts/new" class="btn btn-primary btn-lg">Start Writing</a>' : '<a href="/auth/register" class="btn btn-primary btn-lg">Join for free</a>'}
+  </div>
+</section>
+
+<section class="filter-bar">
+  <form action="/" method="GET" class="filter-form" id="filterForm">
+    <input type="hidden" name="search" value="${typeof search !== 'undefined' ? search : ''}" />
+
+    <div class="filter-categories">
+      <a href="/" class="category-pill ${!selectedCategory ? 'active' : ''}">All</a>
+      ${categories.map(c => `<a href="/?category=${c}${selectedSort !== 'newest' ? '&sort=' + selectedSort : ''}" class="category-pill ${selectedCategory === c ? 'active' : ''}">${c}</a>`).join('')}
+    </div>
+
+    <div class="filter-controls">
+      <select name="sort" class="filter-select" onchange="document.getElementById('filterForm').submit()">
+        <option value="newest" ${selectedSort === 'newest' ? 'selected' : ''}>Newest</option>
+        <option value="oldest" ${selectedSort === 'oldest' ? 'selected' : ''}>Oldest</option>
+        <option value="popular" ${selectedSort === 'popular' ? 'selected' : ''}>Most Viewed</option>
+        <option value="liked" ${selectedSort === 'liked' ? 'selected' : ''}>Most Liked</option>
+      </select>
+      ${selectedCategory ? `<input type="hidden" name="category" value="${selectedCategory}" />` : ''}
+      ${selectedTag ? `<input type="hidden" name="tag" value="${selectedTag}" />` : ''}
+    </div>
+  </form>
+
+  ${selectedTag ? `<div class="active-filter">Filtering by tag: <strong>#${selectedTag}</strong> <a href="/">✕ Clear</a></div>` : ''}
+  ${search ? `<div class="active-filter">Results for: <strong>"${search}"</strong> <a href="/">✕ Clear</a></div>` : ''}
+</section>
+
+<section class="posts-section">
+  ${posts && posts.length > 0 ? `
+    <div class="posts-grid">
+      ${posts.map(post => `
+        <article class="post-card">
+          <div class="post-card-meta-top">
+            <span class="category-badge">${post.category || 'Other'}</span>
+            <span class="read-time">${post.readTime || 1} min read</span>
+          </div>
+          <h2 class="post-card-title">
+            <a href="/posts/${post._id}">${post.title}</a>
+          </h2>
+          <p class="post-card-excerpt">${(post.excerpt || post.content.substring(0, 150)).replace(/<[^>]*>/g, '')}...</p>
+          <div class="post-card-tags">
+            ${(post.tags || []).slice(0, 3).map(tag => `<a href="/?tag=${tag}" class="tag">#${tag}</a>`).join('')}
+          </div>
+          <div class="post-card-footer">
+            <div class="post-card-author">
+              <div class="avatar-xs">${post.author?.name ? post.author.name.charAt(0).toUpperCase() : 'A'}</div>
+              <span>${post.author?.name || 'Anonymous'}</span>
+            </div>
+            <div class="post-card-stats">
+              <span>👁 ${post.views}</span>
+              <span>❤️ ${post.likes?.length || 0}</span>
+              <span>${new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+            </div>
+          </div>
+        </article>
+      `).join('')}
+    </div>
+  ` : `
+    <div class="empty-state">
+      <div class="empty-icon">📝</div>
+      <h2>No posts found</h2>
+      <p>${search || selectedCategory || selectedTag ? 'Try adjusting your filters.' : 'Be the first to share something!'}</p>
+      ${locals.currentUser ? '<a href="/posts/new" class="btn btn-primary">Write a Post</a>' : '<a href="/auth/register" class="btn btn-primary">Join & Write</a>'}
+    </div>
+  `}
+</section>
+
+${allTags && allTags.length > 0 ? `
+  <aside class="tag-cloud-section">
+    <h3>Explore Tags</h3>
+    <div class="tag-cloud">
+      ${allTags.slice(0, 20).map(tag => `<a href="/?tag=${tag}" class="tag">#${tag}</a>`).join('')}
+    </div>
+  </aside>
+` : ''}
+`;
+%>
+<%- include('../layouts/main', { title, body: bodyHtml }) %>

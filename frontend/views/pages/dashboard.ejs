@@ -1,0 +1,117 @@
+<%
+const bodyHtml = `
+<div class="dashboard">
+  <div class="dashboard-header">
+    <div>
+      <h1>Welcome back, ${currentUser.name.split(' ')[0]} 👋</h1>
+      <p>Here's what's happening with your blog</p>
+    </div>
+    <a href="/posts/new" class="btn btn-primary">+ New Post</a>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">📝</div>
+      <div class="stat-info">
+        <span class="stat-value">${stats.totalPosts}</span>
+        <span class="stat-label">Total Posts</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🌍</div>
+      <div class="stat-info">
+        <span class="stat-value">${stats.publishedPosts}</span>
+        <span class="stat-label">Published</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📋</div>
+      <div class="stat-info">
+        <span class="stat-value">${stats.draftPosts}</span>
+        <span class="stat-label">Drafts</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">👁</div>
+      <div class="stat-info">
+        <span class="stat-value">${stats.totalViews.toLocaleString()}</span>
+        <span class="stat-label">Total Views</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">❤️</div>
+      <div class="stat-info">
+        <span class="stat-value">${stats.totalLikes}</span>
+        <span class="stat-label">Total Likes</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💬</div>
+      <div class="stat-info">
+        <span class="stat-value">${stats.totalComments}</span>
+        <span class="stat-label">Comments</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Posts Table -->
+  <div class="dashboard-section">
+    <div class="section-header">
+      <h2>My Posts</h2>
+      <div class="section-filters">
+        <button class="filter-tab active" data-filter="all">All</button>
+        <button class="filter-tab" data-filter="published">Published</button>
+        <button class="filter-tab" data-filter="draft">Drafts</button>
+      </div>
+    </div>
+
+    ${posts && posts.length > 0 ? `
+      <div class="posts-table-wrap">
+        <table class="posts-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Status</th>
+              <th>Views</th>
+              <th>Likes</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${posts.map(post => `
+              <tr data-status="${post.status}">
+                <td class="post-title-cell">
+                  <a href="/posts/${post._id}" target="_blank">${post.title.length > 50 ? post.title.substring(0, 50) + '...' : post.title}</a>
+                </td>
+                <td><span class="category-badge sm">${post.category}</span></td>
+                <td><span class="status-badge status-${post.status}">${post.status}</span></td>
+                <td>${post.views}</td>
+                <td>${post.likes?.length || 0}</td>
+                <td>${new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                <td class="actions-cell">
+                  <a href="/posts/${post._id}/edit" class="btn-icon" title="Edit">✏️</a>
+                  <form action="/posts/${post._id}?_method=DELETE" method="POST" onsubmit="return confirm('Delete this post?')" style="display:inline">
+                    <button type="submit" class="btn-icon" title="Delete">🗑️</button>
+                  </form>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    ` : `
+      <div class="empty-state">
+        <div class="empty-icon">📝</div>
+        <h3>No posts yet</h3>
+        <p>Start sharing your ideas with the world!</p>
+        <a href="/posts/new" class="btn btn-primary">Write Your First Post</a>
+      </div>
+    `}
+  </div>
+</div>
+`;
+%>
+<%- include('../layouts/main', { title, body: bodyHtml }) %>

@@ -1,0 +1,115 @@
+<%
+const bodyHtml = `
+<div class="post-layout">
+  <article class="post-full">
+    <header class="post-header">
+      <div class="post-meta-top">
+        <a href="/?category=${post.category}" class="category-badge">${post.category}</a>
+        <span class="read-time">${post.readTime} min read</span>
+      </div>
+      <h1 class="post-title">${post.title}</h1>
+      <div class="post-byline">
+        <div class="author-info">
+          <div class="avatar-md">${post.author?.name ? post.author.name.charAt(0).toUpperCase() : 'A'}</div>
+          <div>
+            <strong>${post.author?.name || 'Anonymous'}</strong>
+            <span>${new Date(post.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+          </div>
+        </div>
+        <div class="post-stats-bar">
+          <span>👁 ${post.views} views</span>
+          <span>❤️ ${post.likes?.length || 0} likes</span>
+          <span>💬 ${post.comments?.length || 0} comments</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="post-content">
+      ${post.content.replace(/\n/g, '<br>')}
+    </div>
+
+    <footer class="post-footer">
+      <div class="post-tags">
+        ${(post.tags || []).map(tag => `<a href="/?tag=${tag}" class="tag">#${tag}</a>`).join('')}
+      </div>
+
+      <div class="post-actions-bar">
+        ${locals.currentUser ? `
+          <button class="btn-like ${isLiked ? 'liked' : ''}" id="likeBtn" data-post-id="${post._id}">
+            <span class="like-icon">${isLiked ? '❤️' : '🤍'}</span>
+            <span id="likeCount">${post.likes?.length || 0}</span>
+          </button>
+        ` : `<a href="/auth/login" class="btn-like">🤍 ${post.likes?.length || 0} Likes</a>`}
+
+        <div class="share-buttons">
+          <span>Share:</span>
+          <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent('http://localhost:5000/posts/' + post._id)}" target="_blank" class="share-btn share-twitter">𝕏</a>
+          <button class="share-btn share-copy" onclick="navigator.clipboard.writeText(window.location.href).then(() => alert('Link copied!'))">🔗</button>
+        </div>
+
+        ${locals.currentUser && post.author && post.author._id.toString() === currentUser._id.toString() ? `
+          <div class="author-controls">
+            <a href="/posts/${post._id}/edit" class="btn btn-secondary btn-sm">Edit Post</a>
+            <form action="/posts/${post._id}?_method=DELETE" method="POST" onsubmit="return confirm('Are you sure you want to delete this post?')">
+              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+          </div>
+        ` : ''}
+      </div>
+    </footer>
+  </article>
+
+  <!-- Comments Section -->
+  <section class="comments-section" id="comments">
+    <h2>Comments (${post.comments?.length || 0})</h2>
+
+    ${locals.currentUser ? `
+      <form action="/posts/${post._id}/comments" method="POST" class="comment-form">
+        <div class="comment-input-row">
+          <div class="avatar-sm">${currentUser.name.charAt(0).toUpperCase()}</div>
+          <div class="comment-input-wrap">
+            <textarea name="text" placeholder="Write a comment..." rows="3" required maxlength="1000"></textarea>
+            <button type="submit" class="btn btn-primary btn-sm">Post Comment</button>
+          </div>
+        </div>
+      </form>
+    ` : `<p class="login-prompt"><a href="/auth/login">Log in</a> to leave a comment.</p>`}
+
+    <div class="comments-list">
+      ${(post.comments || []).length === 0 ? `
+        <div class="empty-comments">No comments yet. Be the first to share your thoughts!</div>
+      ` : (post.comments || []).map(comment => `
+        <div class="comment">
+          <div class="avatar-sm">${comment.userName ? comment.userName.charAt(0).toUpperCase() : 'A'}</div>
+          <div class="comment-body">
+            <div class="comment-header">
+              <strong>${comment.userName || 'Anonymous'}</strong>
+              <time>${new Date(comment.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</time>
+            </div>
+            <p>${comment.text}</p>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  </section>
+
+  <!-- Related Posts -->
+  ${related && related.length > 0 ? `
+    <section class="related-posts">
+      <h2>More in ${post.category}</h2>
+      <div class="related-grid">
+        ${related.map(r => `
+          <a href="/posts/${r._id}" class="related-card">
+            <span class="category-badge">${r.category}</span>
+            <h3>${r.title}</h3>
+            <p>${(r.excerpt || '').substring(0, 100)}...</p>
+            <span class="read-time">${r.readTime} min read</span>
+          </a>
+        `).join('')}
+      </div>
+    </section>
+  ` : ''}
+</div>
+`;
+%>
+<%- include('../layouts/main', { title, body: bodyHtml }) %>
