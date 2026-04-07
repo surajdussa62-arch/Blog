@@ -8,7 +8,6 @@ const flash = require('connect-flash');
 dotenv.config();
 
 const connectDB = require('./config/database');
-connectDB();
 
 const { setCurrentUser } = require('./middleware/auth');
 const postRoutes = require('./routes/postRoutes');
@@ -16,7 +15,8 @@ const authRoutes = require('./routes/authRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+// Render uses 10000; local uses 5000. This handles both.
+const PORT = process.env.PORT || 10000; 
 
 // Body parsers
 app.use(express.json());
@@ -43,6 +43,11 @@ app.use(express.static(path.join(__dirname, '../frontend/public')));
 
 // Set currentUser & flash messages for all views
 app.use(setCurrentUser);
+app.use((req, res, next) => {
+  res.locals.success = req.flash('success');
+  res.locals.error = req.flash('error');
+  next();
+});
 
 // Routes
 app.use('/auth', authRoutes);
@@ -60,6 +65,20 @@ app.use((err, req, res, next) => {
   res.status(500).render('error', { title: '500 Server Error', message: 'Something went wrong on our end.' });
 });
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+// --- THE FIX: ASYNC STARTUP ---
+const start = async () => {
+  try {
+    // 1. Wait for database connection first
+    await connectDB();
+    
+    // 2. Only start the server if step 1 succeeds
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 Database Connected & Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("❌ Critical Error: Could not start server", error);
+    process.exit(1); // Tell Render the deploy failed
+  }
+};
+
+start();
