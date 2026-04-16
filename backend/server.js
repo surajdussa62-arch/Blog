@@ -4,7 +4,8 @@ const dotenv = require('dotenv');
 const methodOverride = require('method-override');
 const session = require('express-session');
 const flash = require('connect-flash');
-const MongoStore = require('connect-mongo'); // Corrected import
+// V2 REQUIRES passing (session) into the require call
+const MongoStore = require('connect-mongo')(session); 
 
 dotenv.config();
 
@@ -23,20 +24,19 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 
-// Session Configuration
+// Session Configuration (V2 SYNTAX)
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'blogpage_secure_secret_7722',
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI,
-      collectionName: 'sessions',
-      ttl: 7 * 24 * 60 * 60 // 7 days
+    store: new MongoStore({ 
+      url: process.env.MONGODB_URI, // v2 uses 'url', NOT 'mongoUrl'
+      collection: 'sessions',       // v2 uses 'collection', NOT 'collectionName'
+      ttl: 7 * 24 * 60 * 60 
     }),
     cookie: { 
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      // Set to false for now so it works on Render's proxy without extra config
       secure: false, 
       httpOnly: true
     },
