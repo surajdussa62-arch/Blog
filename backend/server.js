@@ -4,7 +4,7 @@ const dotenv = require('dotenv');
 const methodOverride = require('method-override');
 const session = require('express-session');
 const flash = require('connect-flash');
-const MongoStore = require('connect-mongo').default; // 1. Import MongoStore
+const MongoStore = require('connect-mongo'); // Corrected import
 
 dotenv.config();
 
@@ -23,20 +23,22 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 
-// 2. Updated Session with MongoStore to fix MemoryStore warning
+// Session Configuration
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || 'default_secret',
+    secret: process.env.SESSION_SECRET || 'blogpage_secure_secret_7722',
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI, // Connects sessions to Atlas
+      mongoUrl: process.env.MONGODB_URI,
       collectionName: 'sessions',
       ttl: 7 * 24 * 60 * 60 // 7 days
     }),
     cookie: { 
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      secure: process.env.NODE_ENV === 'production' // Set to true if using HTTPS
+      // Set to false for now so it works on Render's proxy without extra config
+      secure: false, 
+      httpOnly: true
     },
   })
 );
@@ -65,15 +67,21 @@ app.use('/', postRoutes);
 
 // Error Handlers (404 & 500)
 app.use((req, res) => {
-  res.status(404).render('error', { title: '404 Not Found', message: 'The page you are looking for does not exist.' });
+  res.status(404).render('error', { 
+    title: '404 Not Found | BlogPage', 
+    message: 'The page you are looking for does not exist.' 
+  });
 });
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).render('error', { title: '500 Server Error', message: 'Something went wrong on our end.' });
+  res.status(500).render('error', { 
+    title: '500 Server Error | BlogPage', 
+    message: 'Something went wrong on our end.' 
+  });
 });
 
-// ASYNC STARTUP
+// Start Server
 const start = async () => {
   try {
     await connectDB();
