@@ -4,13 +4,16 @@ const dotenv = require('dotenv');
 const methodOverride = require('method-override');
 const session = require('express-session');
 const flash = require('connect-flash');
-// V2 REQUIRES passing (session) into the require call
-const MongoStore = require('connect-mongo')(session); 
+
+// FAIL-SAFE IMPORT
+let MongoStore = require('connect-mongo');
+if (typeof MongoStore === 'function') {
+    // If it's the old version (v3), wrap it
+    MongoStore = MongoStore(session);
+}
 
 dotenv.config();
-
 const connectDB = require('./config/database');
-
 const { setCurrentUser } = require('./middleware/auth');
 const postRoutes = require('./routes/postRoutes');
 const authRoutes = require('./routes/authRoutes');
@@ -19,22 +22,19 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const app = express();
 const PORT = process.env.PORT || 10000; 
 
-// Body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 
-// Session Configuration (V2 SYNTAX)
+// UNIVERSAL SESSION CONFIG
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'blogpage_secure_secret_7722',
     resave: false,
     saveUninitialized: false,
-    store: new MongoStore({ 
-      url: process.env.MONGODB_URI, // v2 uses 'url', NOT 'mongoUrl'
-      collection: 'sessions',       // v2 uses 'collection', NOT 'collectionName'
-      ttl: 7 * 24 * 60 * 60 
-    }),
+    store: (MongoStore.create) 
+        ? MongoStore.create({ mongoUrl: process.env.MONGODB_URI }) // Modern
+        : new MongoStore({ url: process.env.MONGODB_URI }),        // Legacy
     cookie: { 
       maxAge: 7 * 24 * 60 * 60 * 1000,
       secure: false, 
@@ -42,6 +42,7 @@ app.use(
     },
   })
 );
+// ... keep the rest of your routes and start function the same ...
 
 app.use(flash());
 
