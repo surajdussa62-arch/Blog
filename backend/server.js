@@ -4,15 +4,10 @@ const dotenv = require('dotenv');
 const methodOverride = require('method-override');
 const session = require('express-session');
 const flash = require('connect-flash');
-
-// FAIL-SAFE IMPORT
-let MongoStore = require('connect-mongo');
-if (typeof MongoStore === 'function') {
-    // If it's the old version (v3), wrap it
-    MongoStore = MongoStore(session);
-}
+const MongoStore = require('connect-mongo');
 
 dotenv.config();
+
 const connectDB = require('./config/database');
 const { setCurrentUser } = require('./middleware/auth');
 const postRoutes = require('./routes/postRoutes');
@@ -22,19 +17,21 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const app = express();
 const PORT = process.env.PORT || 10000; 
 
+// Body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 
-// UNIVERSAL SESSION CONFIG
+// FIXED SESSION CONFIG
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'blogpage_secure_secret_7722',
     resave: false,
     saveUninitialized: false,
-    store: (MongoStore.create) 
-        ? MongoStore.create({ mongoUrl: process.env.MONGODB_URI }) // Modern
-        : new MongoStore({ url: process.env.MONGODB_URI }),        // Legacy
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI,
+      ttl: 7 * 24 * 60 * 60
+    }),
     cookie: { 
       maxAge: 7 * 24 * 60 * 60 * 1000,
       secure: false, 
@@ -42,7 +39,6 @@ app.use(
     },
   })
 );
-// ... keep the rest of your routes and start function the same ...
 
 app.use(flash());
 
@@ -53,7 +49,6 @@ app.set('views', path.join(__dirname, '../frontend/views'));
 // Static files
 app.use(express.static(path.join(__dirname, '../frontend/public')));
 
-// Set currentUser & flash messages for all views
 app.use(setCurrentUser);
 app.use((req, res, next) => {
   res.locals.success = req.flash('success');
@@ -66,23 +61,16 @@ app.use('/auth', authRoutes);
 app.use('/', dashboardRoutes);
 app.use('/', postRoutes);
 
-// Error Handlers (404 & 500)
+// Error Handlers
 app.use((req, res) => {
-  res.status(404).render('error', { 
-    title: '404 Not Found | BlogPage', 
-    message: 'The page you are looking for does not exist.' 
-  });
+  res.status(404).render('error', { title: '404 Not Found', message: 'The page you are looking for does not exist.' });
 });
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).render('error', { 
-    title: '500 Server Error | BlogPage', 
-    message: 'Something went wrong on our end.' 
-  });
+  res.status(500).render('error', { title: '500 Server Error', message: 'Something went wrong on our end.' });
 });
 
-// Start Server
 const start = async () => {
   try {
     await connectDB();
