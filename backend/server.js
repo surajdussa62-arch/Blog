@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const methodOverride = require('method-override');
 const session = require('express-session');
 const flash = require('connect-flash');
+const MongoStore = require('connect-mongo').default; // 1. Import MongoStore
 
 dotenv.config();
 
@@ -15,7 +16,6 @@ const authRoutes = require('./routes/authRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 
 const app = express();
-// Render uses 10000; local uses 5000. This handles both.
 const PORT = process.env.PORT || 10000; 
 
 // Body parsers
@@ -23,15 +23,24 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 
-// Session & flash
+// 2. Updated Session with MongoStore to fix MemoryStore warning
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'default_secret',
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 }, // 7 days
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI, // Connects sessions to Atlas
+      collectionName: 'sessions',
+      ttl: 7 * 24 * 60 * 60 // 7 days
+    }),
+    cookie: { 
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      secure: process.env.NODE_ENV === 'production' // Set to true if using HTTPS
+    },
   })
 );
+
 app.use(flash());
 
 // View engine
@@ -54,30 +63,26 @@ app.use('/auth', authRoutes);
 app.use('/', dashboardRoutes);
 app.use('/', postRoutes);
 
-// 404 handler
+// Error Handlers (404 & 500)
 app.use((req, res) => {
   res.status(404).render('error', { title: '404 Not Found', message: 'The page you are looking for does not exist.' });
 });
 
-// 500 handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).render('error', { title: '500 Server Error', message: 'Something went wrong on our end.' });
 });
 
-// --- THE FIX: ASYNC STARTUP ---
+// ASYNC STARTUP
 const start = async () => {
   try {
-    // 1. Wait for database connection first
     await connectDB();
-    
-    // 2. Only start the server if step 1 succeeds
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 Database Connected & Server running on port ${PORT}`);
     });
   } catch (error) {
     console.error("❌ Critical Error: Could not start server", error);
-    process.exit(1); // Tell Render the deploy failed
+    process.exit(1); 
   }
 };
 
