@@ -1,4 +1,4 @@
-# BlogSpace v2.0
+# BlogSpage v2.0
 
 A modern, full-featured blog application built with **Node.js**, **Express**, **MongoDB**, and **EJS**.
 
